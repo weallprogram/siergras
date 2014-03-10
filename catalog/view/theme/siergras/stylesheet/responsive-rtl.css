@@ -1,0 +1,178 @@
+/*  RTL ---------------------------------------------------------------------------------  */
+/*  ---  Desktop and tablet layout              -----------------------------------------  */
+/*  -------------------------------------------------------------------------------------  */
+/*  ---  Min width: 1000px                      -----------------------------------------  */
+
+@media only screen and (min-width: 768px) {
+  
+
+}
+
+/*  -------------------------------------------------------------------------------------  */
+/*  ---  Min width: 768px / Max width: 991px    -----------------------------------------  */
+
+@media only screen and (min-width: 768px) and (max-width: 991px) {
+
+  
+
+  #header_menu #currency a:first-child{
+      padding-left:20px;
+      padding-right:20px;
+  }
+ 
+  
+  #logo {
+    margin-left:0;
+    margin-right:10px;
+  }
+  #header #welcome, #header #cart, #language {
+    left:10px;
+    right:auto;
+  }
+  #header #search {
+    
+    right:420px;
+    left:auto;
+    
+  } 
+  
+}
+
+/*  -------------------------------------------------------------------------------------  */
+/*  ---  Mobile Layout (320px)                  -----------------------------------------  */
+/*  -------------------------------------------------------------------------------------  */
+/*  ---  Max width: 767px                       -----------------------------------------  */
+
+@media only screen and (max-width: 767px) {
+
+  /* product */
+  .product-info > .left {
+    float:none;
+    width:100%;
+    margin-right:15px;
+    margin-left:0px;
+    clear:both;
+  }
+  
+  
+  .product-info .zoom {
+
+     float:right;
+  }
+  
+  .product-info > .left + .right  {
+    margin-left:0px;
+    
+    margin-right: 0px;
+
+  }
+  
+
+  .limit {
+    margin-right:0px!important;
+    margin-left:10px;  
+  }
+  .sort, .limit {
+    float:right!important;
+  }
+  
+  
+  
+  .product-list .box-product-item .name a {
+    margin-left:0px;
+    margin-right:0px;
+    text-align:center;
+  }
+ 
+  
+  #header_menu a:last-child{
+    padding-left:10px;
+  }
+  #header_menu a:first-child{
+    padding-left:0px;
+  }
+  #header_menu #currency {
+
+    left:auto;
+    right:0px;
+  }
+  #header_menu #currency a:first-child{
+    padding-left:7px;
+    padding-right:7px;
+  }
+
+  #header #logo {
+    margin-left:0px;
+    margin-right:10px;
+  }
+  #header #logo img {
+    width:120px;
+
+  }
+  
+  .product-list .box-product-item .product-list-buttons .pbuttons:last-child{
+    margin-right:10px;
+   
+  }
+  .product-list .box-product-item .product-list-buttons .buttons-cart{
+    margin-right:0px;
+    
+  }
+  #header #welcome, #header #cart, #language {
+    right:auto;
+    left:10px;
+  }
+  #header #search {
+  
+    left:5px;
+    right:auto;
+    
+  }
+ 
+  /* ==== */
+
+  /* modules */
+ 
+  
+  .caroufredsel_wrapper .caruofredsel .box-product-item:nth-child(1n),.box-product-item:nth-child(2n)
+  {
+          margin-right:0;
+          margin-left:10px;
+  }
+
+  /* footer */
+
+  #footer-container .footer-about .social {
+
+    padding-left: 0px;
+    padding-right:0px;
+  
+  }
+ 
+
+}
+
+/*  -------------------------------------------------------------------------------------  */
+/*  ---  Wide Mobile Layout (480px)             -----------------------------------------  */
+/*  -------------------------------------------------------------------------------------  */
+/*  ---  Min width: 480px / Max width: 767px    -----------------------------------------  */
+
+@media only screen and (min-width: 480px) and (max-width: 767px) {
+
+  
+
+}
+
+
+/*  -------------------------------------------------------------------------------------  */
+/*  ---  Retina displays                        -----------------------------------------  */
+/*  ---  Overrides styles for devices with a    -----------------------------------------  */
+/*  ---  device-pixel-ratio of 2+, such as iPhone 4     ---------------------------------  */
+
+@media
+  only screen and (-webkit-min-device-pixel-ratio: 2),
+  only screen and (min-device-pixel-ratio: 2) {
+
+
+
+}

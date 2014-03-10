@@ -45,7 +45,7 @@
               <?php } ?>
               <div>
                 <?php foreach ($product['option'] as $option) { ?>
-                - <small><?php echo $option['name']; ?>: <?php echo $option['value']; ?></small><br />
+                - <small><?php echo $option['name']; ?>: <?php echo $option['value']; ?> - &euro;<?php echo number_format((float)$option['price'], 2, '.', ''); ?></small><br />
                 <?php } ?>
               </div>
               <?php if ($product['reward']) { ?>

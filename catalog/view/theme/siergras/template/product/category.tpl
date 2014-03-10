@@ -1,5 +1,5 @@
 <?php echo $header; ?><?php echo $column_left; ?><?php echo $column_right; ?>
-<div id="content" style="padding-right: 20px; width: 782px;margin-top:62px;"><?php echo $content_top; ?>
+<div id="content"><?php echo $content_top; ?>
   
   <h1 style="padding-left: 25px;"><?php foreach ($breadcrumbs as $breadcrumb) { ?>
     <?php echo $breadcrumb['separator']; ?><a href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a>
@@ -57,22 +57,22 @@
   <?php if ($products) { ?>
 
   <div class="container">
-    <div class="span-24" style="padding-left: 24px;">
+    <div class="span-24">
       <?php
         $collCounter = 0;
         $collMax = 3;
         foreach ($products as $product) {
           if($collCounter >= $collMax){
-            echo '</div><div class="span-24" style="margin-top: 20px;padding-left: 24px;">';
+            echo '</div><div class="span-24" style="margin-top: 20px;">';
             $collCounter = 0;
           }
           $thumb = str_replace("/cache", "", $product['thumb']);
           $thumb = str_replace("-200x200", "", $thumb);
           ?>
-          <div class="span-8" style="border-style:groove; background: url('<?php echo $thumb; ?>');width: 220px; height: 220px; background-size: cover;background-repeat: no-repeat;background-position: 50% 50%;" >
+          <div class="span-8" style="border-style:groove; background: url('<?php echo $thumb; ?>');width: 300px; height: 300px; background-size: cover;background-repeat: no-repeat;background-position: 50% 50%;" >
             <a href="<?php echo $product['href']; ?>">
-              <div style="position: relative; height: 220px;">
-                <div style="position: absolute; bottom: 0; width: 200px; font-weight: bold; padding-left: 10px; padding-right: 10px;" class="catPageTextCaption">
+              <div style="position: relative; height: 300px;">
+                <div style="position: absolute; bottom: 0; width: 280px; font-weight: bold; padding-left: 10px; padding-right: 10px;" class="catPageTextCaption">
                   <p style="height: 50px;vertical-align: middle;"><?php echo $product['name']; ?></p>
                 </div>
               </div>

@@ -204,7 +204,7 @@ class ControllerCheckoutCart extends Controller {
 
         		foreach ($product['option'] as $option) {
 					if ($option['type'] != 'file') {
-						$value = $option['option_value'];	
+						$value = $option['option_value'];
 					} else {
 						$filename = $this->encryption->decrypt($option['option_value']);
 						
@@ -213,7 +213,8 @@ class ControllerCheckoutCart extends Controller {
 					
 					$option_data[] = array(
 						'name'  => $option['name'],
-						'value' => (utf8_strlen($value) > 20 ? utf8_substr($value, 0, 20) . '..' : $value)
+						'value' => (utf8_strlen($value) > 20 ? utf8_substr($value, 0, 20) . '..' : $value),
+						'price' => $option['price']
 					);
         		}
 				
@@ -541,7 +542,7 @@ class ControllerCheckoutCart extends Controller {
 			
 			if (!$json) {
 				$this->cart->add($this->request->post['product_id'], $quantity, $option);
-
+				
 				$json['success'] = sprintf($this->language->get('text_success'), $this->url->link('product/product', 'product_id=' . $this->request->post['product_id']), $product_info['name'], $this->url->link('checkout/cart'));
 				
 				unset($this->session->data['shipping_method']);
@@ -590,7 +591,6 @@ class ControllerCheckoutCart extends Controller {
 				$json['redirect'] = str_replace('&amp;', '&', $this->url->link('product/product', 'product_id=' . $this->request->post['product_id']));
 			}
 		}
-		
 		$this->response->setOutput(json_encode($json));		
 	}
 	

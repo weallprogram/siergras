@@ -54,10 +54,10 @@
 
         </div>
         <div class="span-15 append-1" style="margin-top: 20px;">
-            <a href="index.php?route=information/information&information_id=10">
+            <a href="index.php?route=account/newsletter">
 				<div style="position: relative; background: url('/image/newsletter.png'); background-size: cover; width: 600px; height: 200px;">
 	        		<div style="position: absolute; bottom: 0; width: 600px; font-weight: bold; color: #fff;" class="homePageCaption">
-						<p>VEEL GESTELDE VRAGEN</p>
+						<p>WORDT LID VAN ONZE NIEUWSBRIEF</p>
 					</div>
 	        	</div>
 			</a>

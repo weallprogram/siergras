@@ -43,6 +43,10 @@
           </div>
           <div class="product_title"><h2><?php echo $heading_title; ?></h2></div>
 
+          <?php if($special){
+            $price = $special;
+          } ?>
+          <!--
           <?php if ($price) { ?>
             <div class="price"><b><?php echo $text_price; ?></b>
               <?php if (!$special) { ?>
@@ -65,7 +69,7 @@
                 </div>
               <?php } ?>
             </div><br />
-          <?php } ?>
+          <?php } ?> -->
           <div class="description">
             <!-- <div class="right-rating" onclick="$('a[href=\'#tab-review\']').trigger('click');"><img class="fade-image" src="catalog/view/theme/metroshop/image/stars-<?php echo $rating; ?>.png" alt="<?php echo $reviews; ?>" /></div> -->
             <?php if ($manufacturer) { ?>
@@ -101,7 +105,6 @@
                     <br />
                   <?php } ?>
                   <!-- Modified for option quantity ============================================================== -->
-                  <!-- <?php echo $option['type'] . '<br />'; ?> -->
                   <?php if ($option['type'] == 'checkboxQuantity') { ?>
                       <div id="option-<?php echo $option['product_option_id']; ?>" class="option">
                         <table border="0">
@@ -119,8 +122,15 @@
                         </td><td>
                         <label for="option-value-<?php echo $option_value['product_option_value_id']; ?>"><?php echo $option_value['name']; ?>
                           <?php if ($option_value['price']) { ?>
-                          (<?php echo $option_value['price_prefix']; ?><?php echo $option_value['price']; ?>)
-                          <?php } ?>
+                          &euro;
+                          <?php echo 
+                          number_format(
+                            ((float)str_replace(',', '.',str_replace('€', '', $option_value['price']))) + 
+                            ((float)str_replace(',', '.',str_replace('€', '', $price))), 2, '.', ''); 
+                          ?>
+                          <?php }else{
+                            echo "&euro;" . number_format(((float)str_replace(',', '.',str_replace('€', '', $price))), 2, '.', '');
+                            } ?>
                         </label>
                     </td><td>
                     <input type="number" name="option-quantity[<?php echo $option_value['product_option_value_id']; ?>][]" style="width:50px" id="option-value-quantity-<?php echo $option_value['product_option_value_id']; ?>" value="0" min="0" class="leoptionQuantity" />
@@ -502,7 +512,7 @@ $('#button-cart').bind('click', function() {
   $(".leoptionQuantity").each(function(){
     totalCount += parseInt($(this).val());
   });
-  $("#leQuantity").val(totalCount);
+  // $("#leQuantity").val(totalCount);
   
   var p = $("input[name='product_id']").val();
   var q = $("input[name='quantity']").val();

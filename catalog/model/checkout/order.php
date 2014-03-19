@@ -41,7 +41,7 @@ class ModelCheckoutOrder extends Model {
 				$payment_iso_code_3 = $country_query->row['iso_code_3'];
 			} else {
 				$payment_iso_code_2 = '';
-				$payment_iso_code_3 = '';
+				$payment_iso_code_3 = '';				
 			}
 			
 			$zone_query = $this->db->query("SELECT * FROM `" . DB_PREFIX . "zone` WHERE zone_id = '" . (int)$order_query->row['payment_zone_id'] . "'");
@@ -59,7 +59,7 @@ class ModelCheckoutOrder extends Model {
 				$shipping_iso_code_3 = $country_query->row['iso_code_3'];
 			} else {
 				$shipping_iso_code_2 = '';
-				$shipping_iso_code_3 = '';
+				$shipping_iso_code_3 = '';				
 			}
 			
 			$zone_query = $this->db->query("SELECT * FROM `" . DB_PREFIX . "zone` WHERE zone_id = '" . (int)$order_query->row['shipping_zone_id'] . "'");
@@ -206,7 +206,19 @@ class ModelCheckoutOrder extends Model {
 				$order_option_query = $this->db->query("SELECT * FROM " . DB_PREFIX . "order_option WHERE order_id = '" . (int)$order_id . "' AND order_product_id = '" . (int)$order_product['order_product_id'] . "'");
 			
 				foreach ($order_option_query->rows as $option) {
-					$this->db->query("UPDATE " . DB_PREFIX . "product_option_value SET quantity = (quantity - " . (int)$order_product['quantity'] . ") WHERE product_option_value_id = '" . (int)$option['product_option_value_id'] . "' AND subtract = '1'");
+// Modified for option quantity ==========================================================================================
+					$order_product_option_quantity = 1;
+					foreach ($this->session->data['cart'] as $key => $quantity) {
+						$productt = explode(':', $key);
+						if(isset($productt[2])) {
+							$optionsQuantities = unserialize(base64_decode($productt[2]));
+							if (array_key_exists((int)$option['product_option_value_id'], $optionsQuantities)) {
+								$order_product_option_quantity = $optionsQuantities[(int)$option['product_option_value_id']][0];
+							}
+						} 
+					}
+					$this->db->query("UPDATE " . DB_PREFIX . "product_option_value SET quantity = (quantity - " . (int)$order_product['quantity']*$order_product_option_quantity . ") WHERE product_option_value_id = '" . (int)$option['product_option_value_id'] . "' AND subtract = '1'");
+//========================================================================================================================
 				}
 			}
 			
@@ -380,22 +392,37 @@ class ModelCheckoutOrder extends Model {
 			
 			// Products
 			$template->data['products'] = array();
-				
+			$basePrice = 0;
+			
 			foreach ($order_product_query->rows as $product) {
 				$option_data = array();
+				
+				$totalOptions = 0;
+				$extra_pro_info = $this -> getProduct($product['product_id']);
+				$basePrice = number_format((float)str_replace(',', '.',str_replace('€', '', $extra_pro_info['price'])), 2, '.', '');
 				
 				$order_option_query = $this->db->query("SELECT * FROM " . DB_PREFIX . "order_option WHERE order_id = '" . (int)$order_id . "' AND order_product_id = '" . (int)$product['order_product_id'] . "'");
 				
 				foreach ($order_option_query->rows as $option) {
+					$optPrice = $this -> getOptionPrice($option['product_option_value_id']);
+
 					if ($option['type'] != 'file') {
 						$value = $option['value'];
 					} else {
 						$value = utf8_substr($option['value'], 0, utf8_strrpos($option['value'], '.'));
 					}
+
+					$optTimes = $option['name'];
+					$optTimes = explode('x', $optTimes);
+					$optTimes = str_replace('(', '', $optTimes[0]);
+					$totalOptions += floatval($optTimes);
 					
 					$option_data[] = array(
 						'name'  => $option['name'],
-						'value' => (utf8_strlen($value) > 20 ? utf8_substr($value, 0, 20) . '..' : $value)
+						'value' => (utf8_strlen($value) > 20 ? utf8_substr($value, 0, 20) . '..' : $value),
+						'optTimes' => $optTimes,
+						'optPrice' => $optPrice,
+						'optTotal' => ($optTimes * ($basePrice + $optPrice))
 					);					
 				}
 			  
@@ -405,7 +432,8 @@ class ModelCheckoutOrder extends Model {
 					'option'   => $option_data,
 					'quantity' => $product['quantity'],
 					'price'    => $this->currency->format($product['price'] + ($this->config->get('config_tax') ? $product['tax'] : 0), $order_info['currency_code'], $order_info['currency_value']),
-					'total'    => $this->currency->format($product['total'] + ($this->config->get('config_tax') ? ($product['tax'] * $product['quantity']) : 0), $order_info['currency_code'], $order_info['currency_value'])
+					'total'    => $this->currency->format($product['total'] + ($this->config->get('config_tax') ? ($product['tax'] * $product['quantity']) : 0), $order_info['currency_code'], $order_info['currency_value']),
+					'price_base' => $basePrice
 				);
 			}
 	
@@ -499,6 +527,9 @@ class ModelCheckoutOrder extends Model {
 			$mail->setText(html_entity_decode($text, ENT_QUOTES, 'UTF-8'));
 			$mail->send();
 
+			$adminTxt = $text;
+			$adminHtml = $html;
+
 			// Admin Alert Mail
 			if ($this->config->get('config_alert_mail')) {
 				$subject = sprintf($language->get('text_new_subject'), html_entity_decode($this->config->get('config_name'), ENT_QUOTES, 'UTF-8'), $order_id);
@@ -545,19 +576,21 @@ class ModelCheckoutOrder extends Model {
 					$text .= $order_info['comment'] . "\n\n";
 				}
 			
-				// HTML
-				$template->data['text_greeting'] = $language->get('text_new_received') . "\n\n";
-				$template->data['invoice_no'] = '';
-				$template->data['text_invoice_no'] = '';
-				if (file_exists(DIR_TEMPLATE . $this->config->get('config_template') . '/template/mail/order.tpl')) {
-				   $html = $template->fetch($this->config->get('config_template') . '/template/mail/order.tpl');
-				} else {
-				   $html = $template->fetch('default/template/mail/order.tpl');
-				}
-				$subject = sprintf($language->get('text_new_subject'), html_entity_decode($this->config->get('config_name'), ENT_QUOTES, 'UTF-8'), $order_id );
-				$mail->setSubject($subject);
+				$mail = new Mail(); 
+				$mail->protocol = $this->config->get('config_mail_protocol');
+				$mail->parameter = $this->config->get('config_mail_parameter');
+				$mail->hostname = $this->config->get('config_smtp_host');
+				$mail->username = $this->config->get('config_smtp_username');
+				$mail->password = $this->config->get('config_smtp_password');
+				$mail->port = $this->config->get('config_smtp_port');
+				$mail->timeout = $this->config->get('config_smtp_timeout');
 				$mail->setTo($this->config->get('config_email'));
-				$mail->setHtml($html);
+				$mail->setFrom($this->config->get('config_email'));
+				$mail->setSender($order_info['store_name']);
+				$mail->setSubject(html_entity_decode($subject, ENT_QUOTES, 'UTF-8'));
+				$mail->setHtml($adminHtml);
+				// $mail->setText(html_entity_decode($text, ENT_QUOTES, 'UTF-8'));
+				$mail -> setText(html_entity_decode($adminTxt, ENT_QUOTES, 'UTF-8'));
 				$mail->send();
 				
 				// Send to additional alert emails
@@ -667,6 +700,72 @@ class ModelCheckoutOrder extends Model {
 				$mail->setText(html_entity_decode($message, ENT_QUOTES, 'UTF-8'));
 				$mail->send();
 			}
+		}
+	}
+
+	public function getProduct($product_id) {
+		if ($this->customer->isLogged()) {
+			$customer_group_id = $this->customer->getCustomerGroupId();
+		} else {
+			$customer_group_id = $this->config->get('config_customer_group_id');
+		}	
+				
+		$query = $this->db->query("SELECT DISTINCT *, pd.name AS name, p.image, m.name AS manufacturer, (SELECT price FROM " . DB_PREFIX . "product_discount pd2 WHERE pd2.product_id = p.product_id AND pd2.customer_group_id = '" . (int)$customer_group_id . "' AND pd2.quantity = '1' AND ((pd2.date_start = '0000-00-00' OR pd2.date_start < NOW()) AND (pd2.date_end = '0000-00-00' OR pd2.date_end > NOW())) ORDER BY pd2.priority ASC, pd2.price ASC LIMIT 1) AS discount, (SELECT price FROM " . DB_PREFIX . "product_special ps WHERE ps.product_id = p.product_id AND ps.customer_group_id = '" . (int)$customer_group_id . "' AND ((ps.date_start = '0000-00-00' OR ps.date_start < NOW()) AND (ps.date_end = '0000-00-00' OR ps.date_end > NOW())) ORDER BY ps.priority ASC, ps.price ASC LIMIT 1) AS special, (SELECT points FROM " . DB_PREFIX . "product_reward pr WHERE pr.product_id = p.product_id AND customer_group_id = '" . (int)$customer_group_id . "') AS reward, (SELECT ss.name FROM " . DB_PREFIX . "stock_status ss WHERE ss.stock_status_id = p.stock_status_id AND ss.language_id = '" . (int)$this->config->get('config_language_id') . "') AS stock_status, (SELECT wcd.unit FROM " . DB_PREFIX . "weight_class_description wcd WHERE p.weight_class_id = wcd.weight_class_id AND wcd.language_id = '" . (int)$this->config->get('config_language_id') . "') AS weight_class, (SELECT lcd.unit FROM " . DB_PREFIX . "length_class_description lcd WHERE p.length_class_id = lcd.length_class_id AND lcd.language_id = '" . (int)$this->config->get('config_language_id') . "') AS length_class, (SELECT AVG(rating) AS total FROM " . DB_PREFIX . "review r1 WHERE r1.product_id = p.product_id AND r1.status = '1' GROUP BY r1.product_id) AS rating, (SELECT COUNT(*) AS total FROM " . DB_PREFIX . "review r2 WHERE r2.product_id = p.product_id AND r2.status = '1' GROUP BY r2.product_id) AS reviews, p.sort_order FROM " . DB_PREFIX . "product p LEFT JOIN " . DB_PREFIX . "product_description pd ON (p.product_id = pd.product_id) LEFT JOIN " . DB_PREFIX . "product_to_store p2s ON (p.product_id = p2s.product_id) LEFT JOIN " . DB_PREFIX . "manufacturer m ON (p.manufacturer_id = m.manufacturer_id) WHERE p.product_id = '" . (int)$product_id . "' AND pd.language_id = '" . (int)$this->config->get('config_language_id') . "' AND p.status = '1' AND p.date_available <= NOW() AND p2s.store_id = '" . (int)$this->config->get('config_store_id') . "'");
+		
+		if ($query->num_rows) {
+			return array(
+				'product_id'       => $query->row['product_id'],
+				'name'             => $query->row['name'],
+				'description'      => $query->row['description'],
+				'meta_description' => $query->row['meta_description'],
+				'meta_keyword'     => $query->row['meta_keyword'],
+				'tag'              => $query->row['tag'],
+				'model'            => $query->row['model'],
+				'sku'              => $query->row['sku'],
+				'upc'              => $query->row['upc'],
+				'ean'              => $query->row['ean'],
+				'jan'              => $query->row['jan'],
+				'isbn'             => $query->row['isbn'],
+				'mpn'              => $query->row['mpn'],
+				'location'         => $query->row['location'],
+				'quantity'         => $query->row['quantity'],
+				'stock_status'     => $query->row['stock_status'],
+				'image'            => $query->row['image'],
+				'manufacturer_id'  => $query->row['manufacturer_id'],
+				'manufacturer'     => $query->row['manufacturer'],
+				'price'            => ($query->row['discount'] ? $query->row['discount'] : $query->row['price']),
+				'special'          => $query->row['special'],
+				'reward'           => $query->row['reward'],
+				'points'           => $query->row['points'],
+				'tax_class_id'     => $query->row['tax_class_id'],
+				'date_available'   => $query->row['date_available'],
+				'weight'           => $query->row['weight'],
+				'weight_class_id'  => $query->row['weight_class_id'],
+				'length'           => $query->row['length'],
+				'width'            => $query->row['width'],
+				'height'           => $query->row['height'],
+				'length_class_id'  => $query->row['length_class_id'],
+				'subtract'         => $query->row['subtract'],
+				'rating'           => round($query->row['rating']),
+				'reviews'          => $query->row['reviews'] ? $query->row['reviews'] : 0,
+				'minimum'          => $query->row['minimum'],
+				'sort_order'       => $query->row['sort_order'],
+				'status'           => $query->row['status'],
+				'date_added'       => $query->row['date_added'],
+				'date_modified'    => $query->row['date_modified'],
+				'viewed'           => $query->row['viewed']
+			);
+		} else {
+			return false;
+		}
+	}
+
+	public function getOptionPrice($optID){
+		$query = $this -> db -> query("SELECT `price` FROM `oc_product_option_value` WHERE `product_option_value_id` = " . $optID);
+		if(isset($query -> row['price'])){
+			return $query -> row['price'];
+		}else{
+			return 0;
 		}
 	}
 }

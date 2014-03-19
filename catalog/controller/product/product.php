@@ -2,7 +2,7 @@
 class ControllerProductProduct extends Controller {
 	private $error = array(); 
 	
-	public function index() { 
+	public function index() {
 		$this->language->load('product/product');
 	
 		$this->data['breadcrumbs'] = array();
@@ -307,8 +307,7 @@ class ControllerProductProduct extends Controller {
 			foreach ($results as $result) {
 				$this->data['images'][] = array(
 					'popup' => $this->model_tool_image->resize($result['image'], $this->config->get('config_image_popup_width'), $this->config->get('config_image_popup_height')),
-					'thumb' => $this->model_tool_image->resize($result['image'], $this->config->get('config_image_additional_width'), $this->config->get('config_image_additional_height')),
-					'zoom_thumb' => $this->model_tool_image->resize($result['image'], $this->config->get('config_image_thumb_width'), $this->config->get('config_image_thumb_height'))
+					'thumb' => $this->model_tool_image->resize($result['image'], $this->config->get('config_image_additional_width'), $this->config->get('config_image_additional_height'))
 				);
 			}	
 						
@@ -344,7 +343,9 @@ class ControllerProductProduct extends Controller {
 			$this->data['options'] = array();
 			
 			foreach ($this->model_catalog_product->getProductOptions($this->request->get['product_id']) as $option) { 
-				if ($option['type'] == 'select' || $option['type'] == 'radio' || $option['type'] == 'checkbox' || $option['type'] == 'image') { 
+//Modified for option quantity=============================================================================================
+				if ($option['type'] == 'select' || $option['type'] == 'radio' || $option['type'] == 'checkbox' || $option['type'] == 'checkboxQuantity' || $option['type'] == 'image') { 
+//=========================================================================================================================
 					$option_value_data = array();
 					
 					foreach ($option['option_value'] as $option_value) {

@@ -12,6 +12,19 @@
     </thead>
     <tbody>
       <?php foreach ($products as $product) { ?>
+        <?php foreach ($product['option'] as $option) { ?>
+          <tr>
+            <td class="name" style="text-align: left;">
+              <a href="<?php echo $product['href']; ?>"><?php echo $product['name']; ?></a>
+              <?php echo $option['value']; ?>
+            </td>
+            <td class="model"><?php echo $product['model']; ?></td>
+            <td class="quantity"><?php echo $option['optTimes']; ?></td>
+            <td class="price">&euro;<?php echo number_format((float)($product['price_base'] + $option['optPrice']), 2, '.', ''); ?></td>
+            <td class="total">&euro;<?php echo number_format((float)$option['optTotal'], 2, '.', ''); ?></td>
+          </tr>
+        <?php } ?>
+      <!--
       <tr>
         <td class="name"><a href="<?php echo $product['href']; ?>"><?php echo $product['name']; ?></a>
           <?php foreach ($product['option'] as $option) { ?>
@@ -22,7 +35,7 @@
         <td class="quantity"><?php echo $product['quantity']; ?></td>
         <td class="price"><?php echo $product['price']; ?></td>
         <td class="total"><?php echo $product['total']; ?></td>
-      </tr>
+      </tr> -->
       <?php } ?>
       <?php foreach ($vouchers as $voucher) { ?>
       <tr>

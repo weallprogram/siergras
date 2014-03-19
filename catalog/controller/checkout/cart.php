@@ -25,10 +25,29 @@ class ControllerCheckoutCart extends Controller {
 		}
        	
 		// Remove
+
 		if (isset($this->request->get['remove'])) {
 			$this->cart->remove($this->request->get['remove']);
 			
 			unset($this->session->data['vouchers'][$this->request->get['remove']]);
+			
+			$this->session->data['success'] = $this->language->get('text_remove');
+		
+			unset($this->session->data['shipping_method']);
+			unset($this->session->data['shipping_methods']);
+			unset($this->session->data['payment_method']);
+			unset($this->session->data['payment_methods']); 
+			unset($this->session->data['reward']);  
+								
+			$this->redirect($this->url->link('checkout/cart'));
+		}
+
+		if (isset($this->request->get['remove_opt'])) {
+			$getVal = rawurldecode($this -> request -> get['remove_opt']);
+
+			$this->cart->remove_opt($getVal);
+			
+			unset($this->session->data['vouchers'][$getVal]);
 			
 			$this->session->data['success'] = $this->language->get('text_remove');
 		
@@ -180,10 +199,16 @@ class ControllerCheckoutCart extends Controller {
       		$this->data['products'] = array();
 			
 			$products = $this->cart->getProducts();
+			$this->load->model('catalog/product');
+			$totalAll = 0;
+			$fakeProCount = 0;
 
       		foreach ($products as $product) {
+      			$extra_pro_info = $this -> model_catalog_product -> getProduct($product['product_id']);
+				$basePrice = number_format((float)str_replace(',', '.',str_replace('€', '', $extra_pro_info['price'])), 2, '.', '');
+
 				$product_total = 0;
-					
+
 				foreach ($products as $product_2) {
 					if ($product_2['product_id'] == $product['product_id']) {
 						$product_total += $product_2['quantity'];
@@ -201,20 +226,32 @@ class ControllerCheckoutCart extends Controller {
 				}
 
 				$option_data = array();
+				$totalOptions = 0;
 
         		foreach ($product['option'] as $option) {
+					$optPrice = $this -> model_catalog_product -> getOptionPrice($option['product_option_value_id']);
+
 					if ($option['type'] != 'file') {
-						$value = $option['option_value'];
+						$value = $option['option_value'];	
 					} else {
 						$filename = $this->encryption->decrypt($option['option_value']);
 						
 						$value = utf8_substr($filename, 0, utf8_strrpos($filename, '.'));
 					}
 					
-					$option_data[] = array(
+					$optTimes = $option['name'];
+					$optTimes = explode('x', $optTimes);
+					$optTimes = str_replace('(', '', $optTimes[0]);
+					$totalOptions += floatval($optTimes);
+
+					$option_data[] = array(								   
 						'name'  => $option['name'],
+						'optTimes' => $optTimes,
+						'optPrice' => $optPrice,
+						'optTotal' => ($optTimes * ($basePrice + $optPrice)),
+						'optID' => $option['product_option_value_id'],
 						'value' => (utf8_strlen($value) > 20 ? utf8_substr($value, 0, 20) . '..' : $value),
-						'price' => $option['price']
+						'type'  => $option['type']
 					);
         		}
 				
@@ -231,6 +268,11 @@ class ControllerCheckoutCart extends Controller {
 				} else {
 					$total = false;
 				}
+
+				$newTotal = number_format((float)str_replace(',', '.',str_replace('€', '', $total)), 2, '.', '');
+				$newTotal = number_format(($newTotal + ($basePrice * ($totalOptions - 1))), 2, '.', '');
+				$totalAll += $newTotal;
+				$fakeProCount += $totalOptions;
 				
         		$this->data['products'][] = array(
           			'key'      => $product['key'],
@@ -238,11 +280,14 @@ class ControllerCheckoutCart extends Controller {
 					'name'     => $product['name'],
           			'model'    => $product['model'],
           			'option'   => $option_data,
+          			'totalOptions' => $totalOptions,
           			'quantity' => $product['quantity'],
           			'stock'    => $product['stock'] ? true : !(!$this->config->get('config_stock_checkout') || $this->config->get('config_stock_warning')),
 					'reward'   => ($product['reward'] ? sprintf($this->language->get('text_points'), $product['reward']) : ''),
 					'price'    => $price,
+					'price_base' => $basePrice,
 					'total'    => $total,
+					'newTotal' => $newTotal,
 					'href'     => $this->url->link('product/product', 'product_id=' . $product['product_id']),
 					'remove'   => $this->url->link('checkout/cart', 'remove=' . $product['key'])
 				);
@@ -357,9 +402,13 @@ class ControllerCheckoutCart extends Controller {
 				
 				foreach ($results as $result) {
 					if ($this->config->get($result['code'] . '_status')) {
-						$this->load->model('total/' . $result['code']);
-			
-						$this->{'model_total_' . $result['code']}->getTotal($total_data, $total, $taxes);
+						if( $result['code'] == "sub_total"){
+							$this->load->model('total/' . $result['code']);
+							$this->{'model_total_' . $result['code']}->getTotalFixed($total_data, $total, $taxes, $totalAll);
+						}else{
+							$this->load->model('total/' . $result['code']);
+							$this->{'model_total_' . $result['code']}->getTotal($total_data, $total, $taxes);
+						}
 					}
 					
 					$sort_order = array(); 
@@ -385,6 +434,7 @@ class ControllerCheckoutCart extends Controller {
 			}
 			
 			$this->children = array(
+                // 'payment/google_checkout',
 				'common/column_left',
 				'common/column_right',
 				'common/content_bottom',
@@ -531,7 +581,13 @@ class ControllerCheckoutCart extends Controller {
 			} else {
 				$option = array();	
 			}
-			
+//Modified for option quantity=================================================================================			
+			if(isset($this->request->post['option-quantity'])){
+				$optionQuantity = array_filter($this->request->post['option-quantity']);
+			} else {
+				$optionQuantity = array();
+			}
+//================================================================================================			
 			$product_options = $this->model_catalog_product->getProductOptions($this->request->post['product_id']);
 			
 			foreach ($product_options as $product_option) {
@@ -541,8 +597,9 @@ class ControllerCheckoutCart extends Controller {
 			}
 			
 			if (!$json) {
-				$this->cart->add($this->request->post['product_id'], $quantity, $option);
-				
+//Modified for option quantity=================================================================================			
+				$this->cart->add($this->request->post['product_id'], $quantity, $option, $optionQuantity);
+//======================================================================================
 				$json['success'] = sprintf($this->language->get('text_success'), $this->url->link('product/product', 'product_id=' . $this->request->post['product_id']), $product_info['name'], $this->url->link('checkout/cart'));
 				
 				unset($this->session->data['shipping_method']);
@@ -591,6 +648,7 @@ class ControllerCheckoutCart extends Controller {
 				$json['redirect'] = str_replace('&amp;', '&', $this->url->link('product/product', 'product_id=' . $this->request->post['product_id']));
 			}
 		}
+		
 		$this->response->setOutput(json_encode($json));		
 	}
 	

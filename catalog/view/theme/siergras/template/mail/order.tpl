@@ -79,7 +79,19 @@
     </thead>
     <tbody>
       <?php foreach ($products as $product) { ?>
-      <tr>
+        <?php foreach ($product['option'] as $option) { ?>
+          <tr>
+            <td style="font-size: 12px; border-right: 1px solid #DDDDDD; border-bottom: 1px solid #DDDDDD; text-align: left; padding: 7px;">
+              <?php echo $product['name']; ?>
+              <?php echo $option['value']; ?>
+            </td>
+            <td style="font-size: 12px; border-right: 1px solid #DDDDDD; border-bottom: 1px solid #DDDDDD; text-align: left; padding: 7px;"><?php echo $product['model']; ?></td>
+            <td style="font-size: 12px; border-right: 1px solid #DDDDDD; border-bottom: 1px solid #DDDDDD; text-align: right; padding: 7px;"><?php echo $option['optTimes']; ?></td>
+            <td style="font-size: 12px; border-right: 1px solid #DDDDDD; border-bottom: 1px solid #DDDDDD; text-align: right; padding: 7px;">&euro;<?php echo number_format((float)($product['price_base'] + $option['optPrice']), 2, '.', ''); ?></td>
+            <td style="font-size: 12px; border-right: 1px solid #DDDDDD; border-bottom: 1px solid #DDDDDD; text-align: right; padding: 7px;">&euro;<?php echo number_format((float)$option['optTotal'], 2, '.', ''); ?></td>
+          </tr>
+        <?php } ?>
+      <!--<tr>
         <td style="font-size: 12px;	border-right: 1px solid #DDDDDD; border-bottom: 1px solid #DDDDDD; text-align: left; padding: 7px;"><?php echo $product['name']; ?>
           <?php foreach ($product['option'] as $option) { ?>
           <br />
@@ -89,7 +101,7 @@
         <td style="font-size: 12px;	border-right: 1px solid #DDDDDD; border-bottom: 1px solid #DDDDDD; text-align: right; padding: 7px;"><?php echo $product['quantity']; ?></td>
         <td style="font-size: 12px;	border-right: 1px solid #DDDDDD; border-bottom: 1px solid #DDDDDD; text-align: right; padding: 7px;"><?php echo $product['price']; ?></td>
         <td style="font-size: 12px;	border-right: 1px solid #DDDDDD; border-bottom: 1px solid #DDDDDD; text-align: right; padding: 7px;"><?php echo $product['total']; ?></td>
-      </tr>
+      </tr> -->
       <?php } ?>
       <?php foreach ($vouchers as $voucher) { ?>
       <tr>

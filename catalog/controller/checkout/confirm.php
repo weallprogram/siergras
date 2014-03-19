@@ -71,35 +71,11 @@ class ControllerCheckoutConfirm extends Controller {
 		if (!$redirect) {
 			$total_data = array();
 			$total = 0;
+			$totalAll = 0;
 			$taxes = $this->cart->getTaxes();
 			 
 			$this->load->model('setting/extension');
-			
-			$sort_order = array(); 
-			
-			$results = $this->model_setting_extension->getExtensions('total');
-			
-			foreach ($results as $key => $value) {
-				$sort_order[$key] = $this->config->get($value['code'] . '_sort_order');
-			}
-			
-			array_multisort($sort_order, SORT_ASC, $results);
-			
-			foreach ($results as $result) {
-				if ($this->config->get($result['code'] . '_status')) {
-					$this->load->model('total/' . $result['code']);
-		
-					$this->{'model_total_' . $result['code']}->getTotal($total_data, $total, $taxes);
-				}
-			}
-			
-			$sort_order = array(); 
-		  
-			foreach ($total_data as $key => $value) {
-				$sort_order[$key] = $value['sort_order'];
-			}
-	
-			array_multisort($sort_order, SORT_ASC, $total_data);
+			$this->load->model('catalog/product');
 	
 			$this->language->load('checkout/checkout');
 			
@@ -217,17 +193,29 @@ class ControllerCheckoutConfirm extends Controller {
 			}
 			
 			$product_data = array();
-		
+			$fakeProCount = 0;
+
 			foreach ($this->cart->getProducts() as $product) {
+				$totalOptions = 0;
 				$option_data = array();
+
+				$extra_pro_info = $this -> model_catalog_product -> getProduct($product['product_id']);
+				$basePrice = number_format((float)str_replace(',', '.',str_replace('€', '', $extra_pro_info['price'])), 2, '.', '');
 	
 				foreach ($product['option'] as $option) {
+					$optPrice = $this -> model_catalog_product -> getOptionPrice($option['product_option_value_id']);
+
 					if ($option['type'] != 'file') {
 						$value = $option['option_value'];	
 					} else {
 						$value = $this->encryption->decrypt($option['option_value']);
 					}	
 					
+					$optTimes = $option['name'];
+					$optTimes = explode('x', $optTimes);
+					$optTimes = str_replace('(', '', $optTimes[0]);
+					$totalOptions += floatval($optTimes);
+
 					$option_data[] = array(
 						'product_option_id'       => $option['product_option_id'],
 						'product_option_value_id' => $option['product_option_value_id'],
@@ -235,7 +223,10 @@ class ControllerCheckoutConfirm extends Controller {
 						'option_value_id'         => $option['option_value_id'],								   
 						'name'                    => $option['name'],
 						'value'                   => $value,
-						'type'                    => $option['type']
+						'type'                    => $option['type'],
+						'optTimes' 				  => $optTimes,
+						'optPrice'				  => $optPrice,
+						'optTotal'				  => ($optTimes * ($basePrice + $optPrice))
 					);					
 				}
 	 
@@ -252,7 +243,49 @@ class ControllerCheckoutConfirm extends Controller {
 					'tax'        => $this->tax->getTax($product['price'], $product['tax_class_id']),
 					'reward'     => $product['reward']
 				); 
+
+				// Display prices
+				if (($this->config->get('config_customer_price') && $this->customer->isLogged()) || !$this->config->get('config_customer_price')) {
+					$total = $this->currency->format($this->tax->calculate($product['price'], $product['tax_class_id'], $this->config->get('config_tax')) * $product['quantity']);
+				} else {
+					$total = false;
+				}
+
+				$newTotal = number_format((float)str_replace(',', '.',str_replace('€', '', $total)), 2, '.', '');
+				$newTotal = number_format(($newTotal + ($basePrice * ($totalOptions - 1))), 2, '.', '');
+				$totalAll += $newTotal;
+				$fakeProCount += $totalOptions;
 			}
+
+			$sort_order = array(); 
+			
+			$results = $this->model_setting_extension->getExtensions('total');
+			
+			foreach ($results as $key => $value) {
+				$sort_order[$key] = $this->config->get($value['code'] . '_sort_order');
+			}
+			
+			array_multisort($sort_order, SORT_ASC, $results);
+			
+			foreach ($results as $result) {
+				if ($this->config->get($result['code'] . '_status')) {
+					if( $result['code'] == "sub_total"){
+						$this->load->model('total/' . $result['code']);
+						$this->{'model_total_' . $result['code']}->getTotalFixed($total_data, $total, $taxes, $totalAll);
+					}else{
+						$this->load->model('total/' . $result['code']);
+						$this->{'model_total_' . $result['code']}->getTotal($total_data, $total, $taxes);
+					}
+				}
+			}
+			
+			$sort_order = array(); 
+		  
+			foreach ($total_data as $key => $value) {
+				$sort_order[$key] = $value['sort_order'];
+			}
+	
+			array_multisort($sort_order, SORT_ASC, $total_data);
 			
 			// Gift Voucher
 			$voucher_data = array();
@@ -336,9 +369,17 @@ class ControllerCheckoutConfirm extends Controller {
 			$this->data['products'] = array();
 	
 			foreach ($this->cart->getProducts() as $product) {
+				$totalOptions = 0;
 				$option_data = array();
+
+				$extra_pro_info = $this -> model_catalog_product -> getProduct($product['product_id']);
+				$basePrice = number_format((float)str_replace(',', '.',str_replace('€', '', $extra_pro_info['price'])), 2, '.', '');
+
+				$product_total = 0;
 	
 				foreach ($product['option'] as $option) {
+					$optPrice = $this -> model_catalog_product -> getOptionPrice($option['product_option_value_id']);
+					
 					if ($option['type'] != 'file') {
 						$value = $option['option_value'];	
 					} else {
@@ -347,9 +388,18 @@ class ControllerCheckoutConfirm extends Controller {
 						$value = utf8_substr($filename, 0, utf8_strrpos($filename, '.'));
 					}
 										
-					$option_data[] = array(
+					$optTimes = $option['name'];
+					$optTimes = explode('x', $optTimes);
+					$optTimes = str_replace('(', '', $optTimes[0]);
+					$totalOptions += floatval($optTimes);
+
+					$option_data[] = array(								   
 						'name'  => $option['name'],
-						'value' => (utf8_strlen($value) > 20 ? utf8_substr($value, 0, 20) . '..' : $value)
+						'optTimes' => $optTimes,
+						'optPrice' => $optPrice,
+						'optTotal' => ($optTimes * ($basePrice + $optPrice)),
+						'value' => (utf8_strlen($value) > 20 ? utf8_substr($value, 0, 20) . '..' : $value),
+						'type'  => $option['type']
 					);
 				}  
 	 
@@ -362,7 +412,8 @@ class ControllerCheckoutConfirm extends Controller {
 					'subtract'   => $product['subtract'],
 					'price'      => $this->currency->format($this->tax->calculate($product['price'], $product['tax_class_id'], $this->config->get('config_tax'))),
 					'total'      => $this->currency->format($this->tax->calculate($product['price'], $product['tax_class_id'], $this->config->get('config_tax')) * $product['quantity']),
-					'href'       => $this->url->link('product/product', 'product_id=' . $product['product_id'])
+					'href'       => $this->url->link('product/product', 'product_id=' . $product['product_id']),
+					'price_base' => $basePrice
 				); 
 			} 
 			

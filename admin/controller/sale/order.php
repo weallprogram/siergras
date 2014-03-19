@@ -1638,15 +1638,31 @@ class ControllerSaleOrder extends Controller {
 
 			$products = $this->model_sale_order->getOrderProducts($this->request->get['order_id']);
 
+			$this->load->model('catalog/product');
 			foreach ($products as $product) {
 				$option_data = array();
+				$totalOptions = 0;
+
+				$extra_pro_info = $this -> model_catalog_product -> getProduct($product['product_id']);
+				$basePrice = number_format((float)str_replace(',', '.',str_replace('€', '', $extra_pro_info['price'])), 2, '.', '');
 
 				$options = $this->model_sale_order->getOrderOptions($this->request->get['order_id'], $product['order_product_id']);
 
 				foreach ($options as $option) {
+					$optPrice = $this -> model_catalog_product -> getOptionPrice($option['product_option_value_id']);
+
 					if ($option['type'] != 'file') {
+						$optTimes = $option['name'];
+						$optTimes = explode('x', $optTimes);
+						$optTimes = str_replace('(', '', $optTimes[0]);
+						$totalOptions += floatval($optTimes);
+
 						$option_data[] = array(
 							'name'  => $option['name'],
+							'optTimes' => $optTimes,
+							'optPrice' => $optPrice,
+							'optTotal' => ($optTimes * ($basePrice + $optPrice)),
+							'optID' => $option['product_option_value_id'],
 							'value' => $option['value'],
 							'type'  => $option['type']
 						);
@@ -1667,6 +1683,7 @@ class ControllerSaleOrder extends Controller {
 					'model'    		   => $product['model'],
 					'option'   		   => $option_data,
 					'quantity'		   => $product['quantity'],
+					'price_base' => $basePrice,
 					'price'    		   => $this->currency->format($product['price'] + ($this->config->get('config_tax') ? $product['tax'] : 0), $order_info['currency_code'], $order_info['currency_value']),
 					'total'    		   => $this->currency->format($product['total'] + ($this->config->get('config_tax') ? ($product['tax'] * $product['quantity']) : 0), $order_info['currency_code'], $order_info['currency_value']),
 					'href'     		   => $this->url->link('catalog/product/update', 'token=' . $this->session->data['token'] . '&product_id=' . $product['product_id'], 'SSL')
@@ -2483,20 +2500,36 @@ class ControllerSaleOrder extends Controller {
 
 				$products = $this->model_sale_order->getOrderProducts($order_id);
 
+				$this -> load -> model('catalog/product');
 				foreach ($products as $product) {
 					$option_data = array();
+					$totalOptions = 0;
+
+					$extra_pro_info = $this -> model_catalog_product -> getProduct($product['product_id']);
+					$basePrice = number_format((float)str_replace(',', '.',str_replace('€', '', $extra_pro_info['price'])), 2, '.', '');
 
 					$options = $this->model_sale_order->getOrderOptions($order_id, $product['order_product_id']);
 
 					foreach ($options as $option) {
+						$optPrice = $this -> model_catalog_product -> getOptionPrice($option['product_option_value_id']);
+
 						if ($option['type'] != 'file') {
 							$value = $option['value'];
 						} else {
 							$value = utf8_substr($option['value'], 0, utf8_strrpos($option['value'], '.'));
 						}
+
+						$optTimes = $option['name'];
+						$optTimes = explode('x', $optTimes);
+						$optTimes = str_replace('(', '', $optTimes[0]);
+						$totalOptions += floatval($optTimes);
 						
 						$option_data[] = array(
 							'name'  => $option['name'],
+							'optTimes' => $optTimes,
+							'optPrice' => $optPrice,
+							'optTotal' => ($optTimes * ($basePrice + $optPrice)),
+							'optID' => $option['product_option_value_id'],
 							'value' => $value
 						);								
 					}
@@ -2506,6 +2539,7 @@ class ControllerSaleOrder extends Controller {
 						'model'    => $product['model'],
 						'option'   => $option_data,
 						'quantity' => $product['quantity'],
+						'price_base' => $basePrice,
 						'price'    => $this->currency->format($product['price'] + ($this->config->get('config_tax') ? $product['tax'] : 0), $order_info['currency_code'], $order_info['currency_value']),
 						'total'    => $this->currency->format($product['total'] + ($this->config->get('config_tax') ? ($product['tax'] * $product['quantity']) : 0), $order_info['currency_code'], $order_info['currency_value'])
 					);

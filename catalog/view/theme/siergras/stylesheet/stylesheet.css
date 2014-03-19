@@ -137,6 +137,7 @@ label {
 #column-right {
 	float: right;
 	width: 188px;
+	margin-right: -20px;
 }
 #column-right .caroufredsel_wrapper .box-product-item {
 	margin-right:0px;

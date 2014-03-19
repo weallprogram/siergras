@@ -30,7 +30,13 @@ class Cart {
 				} else {
 					$options = array();
 				} 
-				
+//Modified for option quantity ==========================================================================================				
+				if(isset($product[2])) {
+					$optionsQuantity = unserialize(base64_decode($product[2]));
+				} else {
+					$optionsQuantity = array();
+				}
+//=======================================================================================================================				
 				$product_query = $this->db->query("SELECT * FROM " . DB_PREFIX . "product p LEFT JOIN " . DB_PREFIX . "product_description pd ON (p.product_id = pd.product_id) WHERE p.product_id = '" . (int)$product_id . "' AND pd.language_id = '" . (int)$this->config->get('config_language_id') . "' AND p.date_available <= NOW() AND p.status = '1'");
 				
 				if ($product_query->num_rows) {
@@ -134,7 +140,64 @@ class Cart {
 										);								
 									}
 								}						
-							} elseif ($option_query->row['type'] == 'text' || $option_query->row['type'] == 'textarea' || $option_query->row['type'] == 'file' || $option_query->row['type'] == 'date' || $option_query->row['type'] == 'datetime' || $option_query->row['type'] == 'time') {
+							}
+//Modified for option quantity ==========================================================================================							
+							elseif ( $option_query->row['type'] == 'checkboxQuantity' && is_array($option_value)) {
+								foreach ($option_value as $product_option_value_id) {
+									if (array_key_exists($product_option_value_id, $optionsQuantity)) {
+										$optionQuantity = $optionsQuantity[$product_option_value_id][0];
+										if($optionQuantity > 0) {
+											$option_value_query = $this->db->query("SELECT pov.option_value_id, ovd.name, pov.quantity, pov.subtract, pov.price, pov.price_prefix, pov.points, pov.points_prefix, pov.weight, pov.weight_prefix FROM " . DB_PREFIX . "product_option_value pov LEFT JOIN " . DB_PREFIX . "option_value ov ON (pov.option_value_id = ov.option_value_id) LEFT JOIN " . DB_PREFIX . "option_value_description ovd ON (ov.option_value_id = ovd.option_value_id) WHERE pov.product_option_value_id = '" . (int)$product_option_value_id . "' AND pov.product_option_id = '" . (int)$product_option_id . "' AND ovd.language_id = '" . (int)$this->config->get('config_language_id') . "'");
+		
+											if ($option_value_query->num_rows) {	
+												
+												if ($option_value_query->row['price_prefix'] == '+') {
+													$option_price += ($option_value_query->row['price']*$optionQuantity);
+												} elseif ($option_value_query->row['price_prefix'] == '-') {
+													$option_price -= ($option_value_query->row['price']*$optionQuantity);
+												}
+												
+												if ($option_value_query->row['points_prefix'] == '+') {
+													$option_points += $option_value_query->row['points']*$optionQuantity;
+												} elseif ($option_value_query->row['points_prefix'] == '-') {
+													$option_points -= $option_value_query->row['points']*$optionQuantity;
+												}
+																			
+												if ($option_value_query->row['weight_prefix'] == '+') {
+													$option_weight += $option_value_query->row['weight']*$optionQuantity;
+												} elseif ($option_value_query->row['weight_prefix'] == '-') {
+													$option_weight -= $option_value_query->row['weight']*$optionQuantity;
+												}
+												
+												if ($option_value_query->row['subtract'] && (!$option_value_query->row['quantity'] || ($option_value_query->row['quantity'] < ($quantity*$optionQuantity)))) {
+													$stock = false;
+												}
+												
+												$option_data[] = array(
+													'product_option_id'       => $product_option_id,
+													'product_option_value_id' => $product_option_value_id,
+													'product_option_quantity_quantity' => $optionQuantity,
+													'option_id'               => $option_query->row['option_id'],
+													'option_value_id'         => $option_value_query->row['option_value_id'],
+													'name'                    => "(".$optionQuantity."x) ".$option_query->row['name'],
+													'option_value'            => $option_value_query->row['name'],
+													'type'                    => $option_query->row['type'],
+													'quantity'                => $option_value_query->row['quantity'],
+													'subtract'                => $option_value_query->row['subtract'],
+													'price'                   => $option_value_query->row['price']*$optionQuantity,
+													'price_prefix'            => $option_value_query->row['price_prefix'],
+													'points'                  => $option_value_query->row['points']*$optionQuantity,
+													'points_prefix'           => $option_value_query->row['points_prefix'],
+													'weight'                  => $option_value_query->row['weight']*$optionQuantity,
+													'weight_prefix'           => $option_value_query->row['weight_prefix']
+												);								
+											}
+										}
+									}
+								}	
+							}
+//========================================================================================================================
+							elseif ($option_query->row['type'] == 'text' || $option_query->row['type'] == 'textarea' || $option_query->row['type'] == 'file' || $option_query->row['type'] == 'date' || $option_query->row['type'] == 'datetime' || $option_query->row['type'] == 'time') {
 								$option_data[] = array(
 									'product_option_id'       => $product_option_id,
 									'product_option_value_id' => '',
@@ -250,14 +313,14 @@ class Cart {
 		
 		return $this->data;
   	}
-		  
-  	public function add($product_id, $qty = 1, $option = array()) {
+//Modified for option quantity ==========================================================================================
+  	public function add($product_id, $qty = 1, $option = array(), $optionQuantity = array()) {
     	if (!$option) {
       		$key = (int)$product_id;
     	} else {
-      		$key = (int)$product_id . ':' . base64_encode(serialize($option));
+      		$key = (int)$product_id . ':' . base64_encode(serialize($option)).':'.base64_encode(serialize($optionQuantity));
     	}
-    	
+//=======================================================================================================================    	
 		if ((int)$qty && ((int)$qty > 0)) {
     		if (!isset($this->session->data['cart'][$key])) {
       			$this->session->data['cart'][$key] = (int)$qty;
@@ -284,6 +347,54 @@ class Cart {
      		unset($this->session->data['cart'][$key]);
   		}
 		
+		$this->data = array();
+	}
+
+	private function printNice($arr){
+		echo "<pre>";
+		print_r($arr);
+		echo "</pre>";
+	}
+
+	public function remove_opt($key) {
+		$expKey = explode(',', $key);
+		$expKey2 = explode(':', $expKey[0]);
+		
+		$key = $expKey[0];
+		$optId = trim($expKey[1]);
+		$proId = $expKey2[0];
+		$allOpts = $expKey2[1];
+
+		$qty = $this -> session -> data['cart'][$key];
+
+		unset($this->session->data['cart'][$key]);
+
+		$oldOptFine = unserialize(base64_decode($allOpts));
+
+		$optionQuantity = unserialize(base64_decode($expKey2[2]));
+		$option = array();
+		
+		reset($oldOptFine);
+		$optionKey = key($oldOptFine);
+
+		$haystack = 99;
+		$needle = 99;
+		foreach ($oldOptFine as $key => $value) {
+			foreach ($value as $key2 => $value2) {
+				if($value2 == $optId){
+					$haystack = $key2;
+					$needle = $value2;
+				}
+			}
+			unset($oldOptFine[$key][$haystack]);
+			unset($optionQuantity[$needle]);
+			$option = $oldOptFine[$key];
+		}
+		
+		if(!empty($option) && !empty($optionQuantity)){
+			$this -> add($proId, $qty, array($optionKey => $option), $optionQuantity);
+		}
+
 		$this->data = array();
 	}
 	

@@ -27,49 +27,40 @@
           <tr>
             <td class="image"><?php echo $column_image; ?></td>
             <td class="name"><?php echo $column_name; ?></td>
-            <td class="model"><?php echo $column_model; ?></td>
-            <td class="quantity"><?php echo $column_quantity; ?></td>
-            <td class="price"><?php echo $column_price; ?></td>
+            <!-- <td class="model"><?php echo $column_model; ?></td> -->
+            <td class="quantity">Actie</td>
+            <td class="price"><?php echo $column_price; ?> <sup>P</sup>/<sub>S</sub></td>
             <td class="total"><?php echo $column_total; ?></td>
           </tr>
         </thead>
         <tbody>
           <?php foreach ($products as $product) { ?>
-          <tr>
-            <td class="image"><?php if ($product['thumb']) { ?>
-              <a href="<?php echo $product['href']; ?>"><img src="<?php echo $product['thumb']; ?>" alt="<?php echo $product['name']; ?>" title="<?php echo $product['name']; ?>" /></a>
-              <?php } ?></td>
-            <td class="name"><a href="<?php echo $product['href']; ?>"><?php echo $product['name']; ?></a>
-              <?php if (!$product['stock']) { ?>
-              <span class="stock">***</span>
-              <?php } ?>
-              <div>
-                <?php foreach ($product['option'] as $option) { ?>
-                - <small><?php echo $option['name']; ?>: <?php echo $option['value']; ?> - &euro;<?php echo number_format((float)$option['price'], 2, '.', ''); ?></small><br />
-                <?php } ?>
-              </div>
-              <?php if ($product['reward']) { ?>
-              <small><?php echo $product['reward']; ?></small>
-              <?php } ?></td>
-            <td class="model"><?php echo $product['model']; ?></td>
-            <td class="quantity"><input type="text" name="quantity[<?php echo $product['key']; ?>]" value="<?php echo $product['quantity']; ?>" size="1" />
-              &nbsp;
-              <input type="image" src="catalog/view/theme/default/image/update.png" alt="<?php echo $button_update; ?>" title="<?php echo $button_update; ?>" />
-              &nbsp;<a href="<?php echo $product['remove']; ?>"><img src="catalog/view/theme/default/image/remove.png" alt="<?php echo $button_remove; ?>" title="<?php echo $button_remove; ?>" /></a></td>
-            <td class="price"><?php echo $product['price']; ?></td>
-            <td class="total"><?php echo $product['total']; ?></td>
-          </tr>
-          <?php } ?>
-          <?php foreach ($vouchers as $vouchers) { ?>
-          <tr>
-            <td class="image"></td>
-            <td class="name"><?php echo $vouchers['description']; ?></td>
-            <td class="model"></td>
-            <td class="quantity"><input type="text" name="" value="1" size="1" disabled="disabled" />
-              &nbsp;<a href="<?php echo $vouchers['remove']; ?>"><img src="catalog/view/theme/default/image/remove.png" alt="<?php echo $button_remove; ?>" title="<?php echo $button_remove; ?>" /></a></td>
-            <td class="price"><?php echo $vouchers['amount']; ?></td>
-            <td class="total"><?php echo $vouchers['amount']; ?></td>
-          </tr>
+            <?php foreach ($product['option'] as $option) { ?>
+              <tr>
+                <td class="image"><?php if ($product['thumb']) { ?>
+                  <a href="<?php echo $product['href']; ?>"><img src="<?php echo $product['thumb']; ?>" alt="<?php echo $product['name']; ?>" title="<?php echo $product['name']; ?>" /></a>
+                  <?php } ?></td>
+                <td class="name" style="text-align: left;">
+                  <?php echo $option['optTimes']; ?>x 
+                  <a href="<?php echo $product['href']; ?>"><?php echo $product['name']; ?></a>
+                  <?php echo $option['value']; ?>
+                  <?php if (!$product['stock']) { ?>
+                    <span class="stock">***</span>
+                  <?php } ?>
+                </td>
+                <td>
+                  <a href="index.php?route=checkout/cart&remove_opt=<?php echo $product['key']; ?>,<?php echo $option['optID']; ?>">
+                    <img src="catalog/view/theme/default/image/remove.png" alt="<?php echo $button_remove; ?>" title="<?php echo $button_remove; ?>" />
+                  </a>
+                </td>
+                <td style="text-align: right;">
+                &euro;<?php echo number_format((float)($product['price_base'] + $option['optPrice']), 2, '.', ''); ?>
+                </td>
+                <td style="text-align: right;">
+                    &euro;<?php echo number_format((float)$option['optTotal'], 2, '.', ''); ?>
+                </td>
+              </tr>
+            <?php } ?>
           <?php } ?>
         </tbody>
       </table>

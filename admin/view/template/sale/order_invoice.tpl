@@ -84,6 +84,18 @@
       <td align="right"><b><?php echo $column_total; ?></b></td>
     </tr>
     <?php foreach ($order['product'] as $product) { ?>
+      <?php foreach ($product['option'] as $option) { ?>
+        <tr>
+          <td align="left"><?php echo $product['name']; ?>&nbsp;<?php echo $option['value']; ?></td>
+          <td align="left"><?php echo $product['model']; ?></td>
+          <td align="right"><?php echo $option['optTimes']; ?></td>
+          <td align="right">&euro;<?php echo number_format((float)($product['price_base'] + $option['optPrice']), 2, '.', ''); ?></td>
+          <td align="right">&euro;<?php echo number_format((float)$option['optTotal'], 2, '.', ''); ?></td>
+        </tr>
+      <?php } ?>
+    <?php } ?>
+    <!--
+    <?php foreach ($order['product'] as $product) { ?>
     <tr>
       <td><?php echo $product['name']; ?>
         <?php foreach ($product['option'] as $option) { ?>
@@ -95,7 +107,7 @@
       <td align="right"><?php echo $product['price']; ?></td>
       <td align="right"><?php echo $product['total']; ?></td>
     </tr>
-    <?php } ?>
+    <?php } ?> -->
     <?php foreach ($order['voucher'] as $voucher) { ?>
     <tr>
       <td align="left"><?php echo $voucher['description']; ?></td>

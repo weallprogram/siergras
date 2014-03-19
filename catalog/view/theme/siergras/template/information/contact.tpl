@@ -9,9 +9,17 @@
   <form action="<?php echo $action; ?>" method="post" enctype="multipart/form-data">
     <h2><?php echo $text_location; ?></h2>
     <div class="contact-info">
-      <div class="content clearfix"><div class="left"><b><?php echo $text_address; ?></b><br />
-        <?php echo $store; ?><br />
-        <?php echo $address; ?></div>
+      <div class="content clearfix">
+        <div class="left">
+            <b><?php echo $text_address; ?></b><br />
+            <!-- <?php echo $store; ?><br /> --> 
+            <?php echo $address; ?>
+            <br /><br />
+            <b>Bezoek adres</b><br />
+            Flevo Siergras<br />
+            Voorsterweg 18<br />
+            8316 PT MARKNESSE
+        </div>
       <div class="right">
         <?php if ($telephone) { ?>
         <b><?php echo $text_telephone; ?></b><br />

@@ -61,6 +61,16 @@
     </thead>
     <tbody>
       <?php foreach ($products as $product) { ?>
+        <?php foreach ($product['option'] as $option) { ?>
+          <tr>
+            <td class="left"><?php echo $product['name']; ?>&nbsp;<?php echo $option['value']; ?></td>
+            <td class="left"><?php echo $product['model']; ?></td>
+            <td class="right"><?php echo $option['optTimes']; ?></td>
+            <td class="right">&euro;<?php echo number_format((float)($product['price_base'] + $option['optPrice']), 2, '.', ''); ?></td>
+            <td class="right">&euro;<?php echo number_format((float)$option['optTotal'], 2, '.', ''); ?></td>
+          </tr>
+        <?php } ?>
+      <!--
       <tr>
         <td class="left"><?php echo $product['name']; ?>
           <?php foreach ($product['option'] as $option) { ?>
@@ -72,7 +82,7 @@
         <td class="right"><?php echo $product['price']; ?></td>
         <td class="right"><?php echo $product['total']; ?></td>
         <td class="right"><a href="<?php echo $product['return']; ?>"><img src="catalog/view/theme/default/image/return.png" alt="<?php echo $button_return; ?>" title="<?php echo $button_return; ?>" /></a></td>
-      </tr>
+      </tr> -->
       <?php } ?>
       <?php foreach ($vouchers as $voucher) { ?>
       <tr>

@@ -297,30 +297,15 @@
           </thead>
           <tbody>
             <?php foreach ($products as $product) { ?>
-            <tr>
-              <td class="left"><a href="<?php echo $product['href']; ?>"><?php echo $product['name']; ?></a>
-                <?php foreach ($product['option'] as $option) { ?>
-                <br />
-                <?php if ($option['type'] != 'file') { ?>
-                &nbsp;<small> - <?php echo $option['name']; ?>: <?php echo $option['value']; ?></small>
-                <?php } else { ?>
-                &nbsp;<small> - <?php echo $option['name']; ?>: <a href="<?php echo $option['href']; ?>"><?php echo $option['value']; ?></a></small>
-                <?php } ?>
-                <?php } ?></td>
-              <td class="left"><?php echo $product['model']; ?></td>
-              <td class="right"><?php echo $product['quantity']; ?></td>
-              <td class="right"><?php echo $product['price']; ?></td>
-              <td class="right"><?php echo $product['total']; ?></td>
-            </tr>
-            <?php } ?>
-            <?php foreach ($vouchers as $voucher) { ?>
-            <tr>
-              <td class="left"><a href="<?php echo $voucher['href']; ?>"><?php echo $voucher['description']; ?></a></td>
-              <td class="left"></td>
-              <td class="right">1</td>
-              <td class="right"><?php echo $voucher['amount']; ?></td>
-              <td class="right"><?php echo $voucher['amount']; ?></td>
-            </tr>
+              <?php foreach ($product['option'] as $option) { ?>
+                <tr>
+                  <td class="left"><?php echo $product['name']; ?>&nbsp;<?php echo $option['value']; ?></td>
+                  <td class="left"><?php echo $product['model']; ?></td>
+                  <td class="right"><?php echo $option['optTimes']; ?></td>
+                  <td class="right">&euro;<?php echo number_format((float)($product['price_base'] + $option['optPrice']), 2, '.', ''); ?></td>
+                  <td class="right">&euro;<?php echo number_format((float)$option['optTotal'], 2, '.', ''); ?></td>
+                </tr>
+              <?php } ?>
             <?php } ?>
           </tbody>
           <?php foreach ($totals as $totals) { ?>

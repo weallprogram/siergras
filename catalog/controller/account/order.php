@@ -160,6 +160,7 @@ class ControllerAccountOrder extends Controller {
     	}
 						
 		$this->load->model('account/order');
+		$this->load->model('catalog/product');
 			
 		$order_info = $this->model_account_order->getOrder($order_id);
 		
@@ -310,20 +311,32 @@ class ControllerAccountOrder extends Controller {
 			$products = $this->model_account_order->getOrderProducts($this->request->get['order_id']);
 
       		foreach ($products as $product) {
+      			$extra_pro_info = $this -> model_catalog_product -> getProduct($product['product_id']);
+				$basePrice = number_format((float)str_replace(',', '.',str_replace('€', '', $extra_pro_info['price'])), 2, '.', '');
+				
 				$option_data = array();
 				
 				$options = $this->model_account_order->getOrderOptions($this->request->get['order_id'], $product['order_product_id']);
 
          		foreach ($options as $option) {
+         			$optPrice = $this -> model_catalog_product -> getOptionPrice($option['product_option_value_id']);
+
           			if ($option['type'] != 'file') {
 						$value = $option['value'];
 					} else {
 						$value = utf8_substr($option['value'], 0, utf8_strrpos($option['value'], '.'));
 					}
+
+					$optTimes = $option['name'];
+					$optTimes = explode('x', $optTimes);
+					$optTimes = str_replace('(', '', $optTimes[0]);
 					
 					$option_data[] = array(
 						'name'  => $option['name'],
-						'value' => (utf8_strlen($value) > 20 ? utf8_substr($value, 0, 20) . '..' : $value)
+						'value' => (utf8_strlen($value) > 20 ? utf8_substr($value, 0, 20) . '..' : $value),
+						'optTimes' => $optTimes,
+						'optPrice' => $optPrice,
+						'optTotal' => ($optTimes * ($basePrice + $optPrice))
 					);					
         		}
 
@@ -334,7 +347,8 @@ class ControllerAccountOrder extends Controller {
           			'quantity' => $product['quantity'],
           			'price'    => $this->currency->format($product['price'] + ($this->config->get('config_tax') ? $product['tax'] : 0), $order_info['currency_code'], $order_info['currency_value']),
 					'total'    => $this->currency->format($product['total'] + ($this->config->get('config_tax') ? ($product['tax'] * $product['quantity']) : 0), $order_info['currency_code'], $order_info['currency_value']),
-					'return'   => $this->url->link('account/return/insert', 'order_id=' . $order_info['order_id'] . '&product_id=' . $product['product_id'], 'SSL')
+					'return'   => $this->url->link('account/return/insert', 'order_id=' . $order_info['order_id'] . '&product_id=' . $product['product_id'], 'SSL'),
+					'price_base' => $basePrice
         		);
       		}
 

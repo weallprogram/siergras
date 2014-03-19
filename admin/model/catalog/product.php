@@ -700,5 +700,14 @@ class ModelCatalogProduct extends Model {
 
 		return $query->row['total'];
 	}
+
+	public function getOptionPrice($optID){
+		$query = $this -> db -> query("SELECT `price` FROM `oc_product_option_value` WHERE `product_option_value_id` = " . $optID);
+		if(isset($query -> row['price'])){
+			return $query -> row['price'];
+		}else{
+			return 0;
+		}
+	}
 }
 ?>
